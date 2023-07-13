@@ -150,6 +150,7 @@ uint8_t DFRobotDFPlayerMini::readCommand(){
 void DFRobotDFPlayerMini::parseStack(){
   uint8_t handleCommand = *(_received + Stack_Command);
   if (handleCommand == 0x41) { //handle the 0x41 ack feedback as a spcecial case, in case the pollusion of _handleCommand, _handleParameter, and _handleType.
+    _handleCommand = handleCommand;
     _isSending = false;
     return;
   }
