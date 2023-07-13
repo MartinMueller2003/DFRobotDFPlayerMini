@@ -10,6 +10,7 @@
  * @version  V1.0.6
  * @date  2016-12-07
  */
+// #define _DEBUG
 
 #include "DFRobotDFPlayerMini.h"
 
@@ -47,6 +48,11 @@ void DFRobotDFPlayerMini::sendStack(){
   }
   Serial.println();
 #endif
+  _serial->flush();
+  while(_serial->available())
+  {
+    _serial->read();
+  }
   _serial->write(_sending, DFPLAYER_SEND_LENGTH);
   _timeOutTimer = millis();
   _isSending = _sending[Stack_ACK];
@@ -440,6 +446,9 @@ int DFRobotDFPlayerMini::readEQ(){
 }
 
 int DFRobotDFPlayerMini::readFileCounts(uint8_t device){
+#ifdef _DEBUG
+  Serial.println(String("readFileCounts:device: ") + String(device));
+#endif // def _DEBUG
   switch (device) {
     case DFPLAYER_DEVICE_U_DISK:
       sendStack(0x47);
@@ -455,14 +464,24 @@ int DFRobotDFPlayerMini::readFileCounts(uint8_t device){
   }
   
   if (waitAvailable()) {
+#ifdef _DEBUG
+      Serial.println(String("readFileCounts:readType: ") + String(readType()));
+#endif // def _DEBUG
+
     if (readType() == DFPlayerFeedBack) {
       return read();
     }
     else{
+#ifdef _DEBUG
+      Serial.println(String("readFileCounts:Failed: ") + String("Wrong type"));
+#endif // def _DEBUG
       return -1;
     }
   }
   else{
+#ifdef _DEBUG
+    Serial.println(String("readFileCounts:Failed: ") + String("No Response"));
+#endif // def _DEBUG
     return -1;
   }
 }
