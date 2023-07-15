@@ -10,6 +10,7 @@
  * @version  V1.0.6
  * @date  2016-12-07
  */
+
 // #define _DEBUG
 
 #include "DFRobotDFPlayerMini.h"
@@ -32,6 +33,61 @@ uint16_t DFRobotDFPlayerMini::calculateCheckSum(uint8_t *buffer){
 }
 
 void DFRobotDFPlayerMini::sendStack(){
+
+#ifdef _DEBUG
+    Serial.println(String("sendStack: Start: "));
+#endif // def _DEBUG
+
+  uint8_t RetryCounter = 3;
+
+  while(RetryCounter--)
+  {
+    if(_WaitForResponse)
+    {
+      memset(_received, 0x00, sizeof(_received));
+      _isAvailable=false;
+    }
+
+    _sendStack();
+    
+    if(!_WaitForResponse)
+    {
+#ifdef _DEBUG
+      Serial.println(String("sendStack: No Response expected"));
+#endif // def _DEBUG
+      break;
+    }
+
+    if(!waitAvailable(_timeOutDuration))
+    {
+#ifdef _DEBUG
+      Serial.println(String("sendStack: No Response received"));
+#endif // def _DEBUG
+      break;
+    }
+
+    // if response != 0x40 (error/resend) then done
+    if(_received[Stack_Command] != 0x40)
+    {
+#ifdef _DEBUG
+      Serial.println(String("sendStack: Response received: ") + String(_received[Stack_Command], HEX));
+#endif // def _DEBUG
+      break;
+    }
+    // try again
+#ifdef _DEBUG
+    Serial.println(String("sendStack: Retry: ") + String(RetryCounter));
+#endif // def _DEBUG
+
+  } // while(RetryCounter--)
+
+#ifdef _DEBUG
+    Serial.println(String("sendStack: Done: "));
+#endif // def _DEBUG
+
+}
+
+void DFRobotDFPlayerMini::_sendStack(){
   if (_sending[Stack_ACK]) {  //if the ack mode is on wait until the last transmition
     while (_isSending) {
       delay(0);
@@ -88,21 +144,32 @@ void DFRobotDFPlayerMini::disableACK(){
 }
 
 bool DFRobotDFPlayerMini::waitAvailable(unsigned long duration){
+#ifdef _DEBUG
+  Serial.println(F("waitAvailable"));
+#endif // def _DEBUG
   unsigned long timer = millis();
   if (!duration) {
     duration = _timeOutDuration;
   }
   while (!available()){
     if (millis() - timer > duration) {
+#ifdef _DEBUG
+      delay(10);
+      Serial.println(F("waitAvailable:Timeout"));
+#endif // def _DEBUG
       return handleError(TimeOut);
     }
     delay(0);
   }
+#ifdef _DEBUG
+      Serial.println(F("waitAvailable:Got Message"));
+#endif // def _DEBUG
   return true;
 }
 
-bool DFRobotDFPlayerMini::begin(Stream &stream, bool isACK, bool doReset){
+bool DFRobotDFPlayerMini::begin(Stream &stream, bool isACK, bool doReset, bool WaitForResponse){
   _serial = &stream;
+  _WaitForResponse = WaitForResponse;
   
   if (isACK) {
     enableACK();
@@ -233,6 +300,9 @@ bool DFRobotDFPlayerMini::validateStack(){
 }
 
 bool DFRobotDFPlayerMini::available(){
+#ifdef _DEBUG
+    // Serial.println(F("available:Start"));
+#endif
   while (_serial->available()) {
     delay(0);
     if (_receivedIndex == 0) {
@@ -255,11 +325,17 @@ bool DFRobotDFPlayerMini::available(){
       switch (_receivedIndex) {
         case Stack_Version:
           if (_received[_receivedIndex] != 0xFF) {
-            return handleError(WrongStack);
+#ifdef _DEBUG
+            Serial.println(F("available:Wrong version"));
+#endif
+              return handleError(WrongStack);
           }
           break;
         case Stack_Length:
           if (_received[_receivedIndex] != 0x06) {
+#ifdef _DEBUG
+            Serial.println(F("available:Wrong Len"));
+#endif
             return handleError(WrongStack);
           }
           break;
@@ -268,6 +344,9 @@ bool DFRobotDFPlayerMini::available(){
           Serial.println();
 #endif
           if (_received[_receivedIndex] != 0xEF) {
+#ifdef _DEBUG
+            Serial.println(F("available:Wrong Terminator"));
+#endif
             return handleError(WrongStack);
           }
           else{
@@ -277,6 +356,9 @@ bool DFRobotDFPlayerMini::available(){
               return _isAvailable;
             }
             else{
+#ifdef _DEBUG
+              Serial.println(F("available:Stack failed validation"));
+#endif
               return handleError(WrongStack);
             }
           }
@@ -289,6 +371,9 @@ bool DFRobotDFPlayerMini::available(){
   }
   
   
+#ifdef _DEBUG
+    // Serial.println(F("available:Done"));
+#endif
   return _isAvailable;
 }
 

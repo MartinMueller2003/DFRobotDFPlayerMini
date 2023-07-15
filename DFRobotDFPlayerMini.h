@@ -76,6 +76,7 @@ class DFRobotDFPlayerMini {
   
   uint8_t _receivedIndex=0;
 
+  void _sendStack();
   void sendStack();
   void sendStack(uint8_t command);
   void sendStack(uint8_t command, uint16_t argument);
@@ -104,13 +105,14 @@ class DFRobotDFPlayerMini {
   uint16_t _handleParameter;
   bool _isAvailable = false;
   bool _isSending = false;
-  
+  bool _WaitForResponse = false;
+
   bool handleMessage(uint8_t type, uint16_t parameter = 0);
   bool handleError(uint8_t type, uint16_t parameter = 0);
 
   uint8_t readCommand();
   
-  bool begin(Stream& stream, bool isACK = true, bool doReset = true);
+  bool begin(Stream& stream, bool isACK = true, bool doReset = true, bool WaitForResponse = false);
   
   bool waitAvailable(unsigned long duration = 0);
   
